@@ -17,7 +17,7 @@
     "test": "node src/test-ci.js",
     "showdevices": "node src/show-devices.js",
     "prepublish": "git submodule update --init",
-    "install": "prebuild-install || node-gyp rebuild",
+    "install": "node-gyp rebuild",
     "prebuild": "prebuild --all --verbose",
     "prebuild-upload": "prebuild --all --strip --verbose --upload",
     "prebuild-ci": "prebuild-ci",
@@ -37,9 +37,8 @@
   },
   "license": "(MIT OR X11)",
   "dependencies": {
-    "bindings": "^1.4.0",
-    "nan": "^2.12.1",
-    "prebuild-install": "^5.2.4"
+    "loady": "0.0.1",
+    "nan": "^2.13.1"
   },
   "devDependencies": {
     "prebuild": "^8.1.2",

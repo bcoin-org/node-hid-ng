@@ -13,7 +13,7 @@ function setDriverType(type) {
 var binding = null;
 function loadBinding() {
     if( !binding ) {
-        binding = require('bindings')('HID.node');
+        binding = require('loady')('HID', __dirname);
     }
 
     // disabled until prebuild gets multi-target support, see node-hid#242
