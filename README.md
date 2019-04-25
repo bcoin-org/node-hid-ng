@@ -17,7 +17,7 @@ https://github.com/node-hid/node-hid
 * [Examples](#examples)
 * [Usage](#usage)
    * [List all HID devices connected](#list-all-hid-devices-connected)
-     * [Cost of HID.devices() and new HID.HID()](#cost-of-hiddevices-and-new-hidhid-for-detecting-device-plugunplug)
+     * [Cost of HID.devices() and new HID()](#cost-of-hiddevices-and-new-hidhid-for-detecting-device-plugunplug)
    * [Opening a device](#opening-a-device)
    * [Picking a device from the device list](#picking-a-device-from-the-device-list)
    * [Reading from a device](#reading-from-a-device)
@@ -25,8 +25,8 @@ https://github.com/node-hid/node-hid
 * [Complete API](#complete-api)
    * [devices = HID.devices()](#devices--hiddevices)
    * [HID.setDriverType(type)](#hidsetdrivertypetype)
-   * [device = new HID.HID(path)](#device--new-hidhidpath)
-   * [device = new HID.HID(vid,pid)](#device--new-hidhidvidpid)
+   * [device = new HID(path)](#device--new-hidhidpath)
+   * [device = new HID(vid,pid)](#device--new-hidhidvidpid)
    * [device.on('data', function(data) {} )](#deviceondata-functiondata--)
    * [device.on('error, function(error) {} )](#deviceonerror-functionerror--)
    * [device.write(data)](#devicewritedata)
@@ -174,10 +174,10 @@ HID.devices();
     <and more>
 ```
 
-#### Cost of `HID.devices()` and `new HID.HID()` for detecting device plug/unplug
-Both `HID.devices()` and `new HID.HID()` are relatively costly, each causing a USB (and potentially Bluetooth) enumeration. This takes time and OS resources. Doing either can slow down the read/write that you do in parallel with a device, and cause other USB devices to slow down too. This is how USB works.
+#### Cost of `HID.devices()` and `new HID()` for detecting device plug/unplug
+Both `HID.devices()` and `new HID()` are relatively costly, each causing a USB (and potentially Bluetooth) enumeration. This takes time and OS resources. Doing either can slow down the read/write that you do in parallel with a device, and cause other USB devices to slow down too. This is how USB works.
 
-If you are polling `HID.devices()` or doing repeated `new HID.HID(vid,pid)` to detect device plug / unplug, consider instead using [node-usb-detection](https://github.com/MadLittleMods/node-usb-detection). `node-usb-detection` uses OS-specific, non-bus enumeration ways to detect device plug / unplug.
+If you are polling `HID.devices()` or doing repeated `new HID(vid,pid)` to detect device plug / unplug, consider instead using [node-usb-detection](https://github.com/MadLittleMods/node-usb-detection). `node-usb-detection` uses OS-specific, non-bus enumeration ways to detect device plug / unplug.
 
 ### Opening a device
 
@@ -186,13 +186,13 @@ The `path` can be determined by a prior HID.devices() call.
 Use either the `path` from the list returned by a prior call to `HID.devices()`:
 
 ```js
-var device = new HID.HID(path);
+var device = new HID(path);
 ```
 
 or open the first device matching a VID/PID pair:
 
 ```js
-var device = new HID.HID(vid,pid);
+var device = new HID(vid,pid);
 ```
 
 The `device` variable will contain a handle to the device.
@@ -215,7 +215,7 @@ var deviceInfo = devices.find( function(d) {
     return isTeensy && d.usagePage===0xFFAB && d.usage===0x200;
 });
 if( deviceInfo ) {
-  var device = new HID.HID( deviceInfo.path );
+  var device = new HID( deviceInfo.path );
   // ... use device
 }
 ```
@@ -281,11 +281,11 @@ the first byte of the array to `write()` should be the reportId.
   - `type` can be `"hidraw"` or `"libusb"`, defaults to `"hidraw"`
   - NOTE: this function is currently disabled in `node-hid@^0.7.1` due to incompatibilities with `prebuild`.
 
-### `device = new HID.HID(path)`
+### `device = new HID(path)`
 
 - Open a HID device at the specified platform-specific path
 
-### `device = new HID.HID(vid,pid)`
+### `device = new HID(vid,pid)`
 
 - Open first HID device with specific VendorId and ProductId
 
@@ -358,7 +358,7 @@ For reasons similar to mice & keyboards it appears you can't access this control
 ### Prepend byte to `hid_write()`
 Because of a limitation in the underlying `hidapi` library, if you are using `hid_write()` you should prepend a byte to any data buffer, e.g.
 ```js
-var device = new HID.HID(vid,pid);
+var device = new HID(vid,pid);
 var buffer = Array(64).fill(0x33); // device has 64-byte report
 if(os.platform === 'win32') {
   buffer.unshift(0);  // prepend throwaway byte
