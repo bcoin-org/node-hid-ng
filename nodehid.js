@@ -1,140 +1,81 @@
+/**
+ * Modified version of node-hid
+ * (Make it suck less)
+ */
 
-var os = require('os')
+'use strict';
 
-var EventEmitter = require("events").EventEmitter,
-    util = require("util");
+const os = require('os');
+const EventEmitter = require('events');
+const util = require('util');
+const loady = require('loady');
+const binding = require('loady')('HID', __dirname);
 
-var driverType = null;
-function setDriverType(type) {
-    driverType = type;
-}
+class HID extends EventEmitter {
+  constructor() {
+    super();
+    this.closed = false;
+    this.paued = false;
 
-// lazy load the C++ binding
-var binding = null;
-function loadBinding() {
-    if( !binding ) {
-        binding = require('loady')('HID', __dirname);
+    // TODO: untangle this beast
+    this.hid = new (Function.prototype.bind.apply(binding.HID,
+      [null, ...arguments]))();
+    for (const prop in binding.HID.prototype) {
+      if (prop === 'close' || prop === 'read')
+        continue;
+
+      this[prop] = binding.HID.bind(this.hid);
     }
 
-    // disabled until prebuild gets multi-target support, see node-hid#242
-    // if( !binding ) {
-    //     if( os.platform() === 'linux' ) {
-    //         // Linux defaults to hidraw
-    //         if( !driverType || driverType === 'hidraw' ) {
-    //             binding = require('bindings')('HID-hidraw.node');
-    //         } else {
-    //             binding = require('bindings')('HID.node');
-    //         }
-    //     }
-    //     else {
-    //         binding = require('bindings')('HID.node');
-    //     }
-    // }
-}
-
-//This class is a wrapper for `binding.HID` class
-function HID() {
-    //Inherit from EventEmitter
-    EventEmitter.call(this);
-
-    loadBinding();
-
-    /* We also want to inherit from `binding.HID`, but unfortunately,
-        it's not so easy for native Objects. For example, the
-        following won't work since `new` keyword isn't used:
-
-        `binding.HID.apply(this, arguments);`
-
-        So... we do this craziness instead...
-    */
-    var thisPlusArgs = new Array(arguments.length + 1);
-    thisPlusArgs[0] = null;
-    for(var i = 0; i < arguments.length; i++)
-        thisPlusArgs[i + 1] = arguments[i];
-    this._raw = new (Function.prototype.bind.apply(binding.HID,
-        thisPlusArgs) )();
-
-    /* Now we have `this._raw` Object from which we need to
-        inherit.  So, one solution is to simply copy all
-        prototype methods over to `this` and binding them to
-        `this._raw`
-    */
-    for(var i in binding.HID.prototype)
-        if(i != "close" && i != "read")
-            this[i] = binding.HID.prototype[i].bind(this._raw);
-
-    /* We are now done inheriting from `binding.HID` and EventEmitter.
-
-        Now upon adding a new listener for "data" events, we start
-        polling the HID device using `read(...)`
-        See `resume()` for more details. */
-    this._paused = true;
-    var self = this;
-    self.on("newListener", function(eventName, listener) {
-        if(eventName == "data")
-            process.nextTick(self.resume.bind(self) );
-    });
-}
-//Inherit prototype methods
-util.inherits(HID, EventEmitter);
-//Don't inherit from `binding.HID`; that's done above already!
-
-HID.prototype.close = function close() {
-    this._closing = true;
-    this.removeAllListeners();
-    this._raw.close();
-    this._closed = true;
-};
-//Pauses the reader, which stops "data" events from being emitted
-HID.prototype.pause = function pause() {
-    this._paused = true;
-};
-
-HID.prototype.read = function read(callback) {
-    if (this._closed) {
-    throw new Error('Unable to read from a closed HID device');
-  } else {
-    return this._raw.read(callback);
+    this.init();
   }
-};
+  init() {
+    this.on('newListener', (name, listener) => {
+      if (name === 'data')
+        process.nextTick(() => this.resume());
+    });
+  }
+  read(callback) {
+    if (this.closed)
+      throw new Error('Unable to read from a closed HID device');
 
-HID.prototype.resume = function resume() {
-    var self = this;
-    if(self._paused && self.listeners("data").length > 0)
-    {
-        //Start polling & reading loop
-        self._paused = false;
-        self.read(function readFunc(err, data) {
-            if(err)
-            {
-                //Emit error and pause reading
-                self._paused = true;
-                if(!self._closing)
-                    self.emit("error", err);
-                //else ignore any errors if I'm closing the device
-            }
-            else
-            {
-                //If there are no "data" listeners, we pause
-                if(self.listeners("data").length <= 0)
-                    self._paused = true;
-                //Keep reading if we aren't paused
-                if(!self._paused)
-                    self.read(readFunc);
-                //Now emit the event
-                self.emit("data", data);
-            }
-        });
+    return this.hid.read(callback);
+  }
+  resume() {
+    if (!this.paused || this.listeners('data').length === 0)
+      return;
+
+    this.paused = false;
+    this.read(this.reader);
+  }
+  reader(err, data) {
+    if (err) {
+      this.paused = true;
+      this.emit('error', err);
+      return;
     }
-};
 
-function showdevices() {
-    loadBinding();
-    return binding.devices.apply(HID,arguments);
+    if (this.listeners('data').length <= 0)
+      this.paused = true;
+
+    // keep reading if not paused
+    if (!this.paused)
+      this.read(this.reader)
+
+    this.emit('data', data);
+  }
+  close() {
+    this.removeAllListeners();
+    this.hid.close();
+    this.closed = true;
+  }
+  pause() {
+    this.pause = true;
+  }
+
+  static devices() {
+    return binding.devices.apply(HID, arguments);
+  }
 }
 
-//Expose API
-exports.HID = HID;
-exports.devices = showdevices;
-exports.setDriverType = setDriverType;
-// exports.devices = binding.devices;
+module.exports = HID;
