@@ -25,7 +25,7 @@
     "gyprebuild": "node-gyp rebuild"
   },
   "bin": {
-    "hid-showdevices": "./src/show-devices.js"
+    "hid-showdevices": "./test/show-devices.js"
   },
   "main": "./lib/nodehid.js",
   "engines": {
