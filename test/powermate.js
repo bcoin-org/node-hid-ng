@@ -6,7 +6,7 @@
 // to the PowerMate contains zero in the first byte and the brightness
 // of the LED in the second byte.
 
-var HID = require('../');
+var HID = require('../lib/nodehid');
 var util = require('util');
 var events = require('events');
 
@@ -32,7 +32,7 @@ function PowerMate(index)
     if (index > powerMates.length || index < 0) {
         throw new Error("Index " + index + " out of range, only " + powerMates.length + " PowerMates found");
     }
-    this.hid = new HID.HID(powerMates[index].path);
+    this.hid = new HID(powerMates[index].path);
     this.position = 0;
     this.button = 0;
     this.hid.read(this.interpretData.bind(this));

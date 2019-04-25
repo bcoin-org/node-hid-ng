@@ -5,7 +5,7 @@
 
 'use strict';
 
-var HID = require('../');
+const HID = require('../lib/nodehid');
 
 var VENDOR_ID = 0x27B8;
 var PRODUCT_ID = 0x01ED;
@@ -23,17 +23,17 @@ if( devices_found.length === 0 ) {
 console.log("blink(1) devices found:", devices_found,'\n');
 
 var hidDevice;
-try { 
+try {
     if( serial_number ) {
         console.log("opening serial number "+serial_number);
-        hidDevice = new HID.HID( VENDOR_ID, PRODUCT_ID, serial_number );
-    } else { 
+        hidDevice = new HID( VENDOR_ID, PRODUCT_ID, serial_number );
+    } else {
         console.log("opening first device");
-        hidDevice = new HID.HID( VENDOR_ID, PRODUCT_ID );
+        hidDevice = new HID( VENDOR_ID, PRODUCT_ID );
     }
 } catch(err) {
     console.log(err);
-    process.exit(1);    
+    process.exit(1);
 }
 
 var deviceInfo = hidDevice.getDeviceInfo();

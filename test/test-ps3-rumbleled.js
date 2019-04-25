@@ -7,9 +7,9 @@
 /*jslint node: true */
 "use strict";
 
-var HID = require('..');
+const HID = require('../lib/nodehid');
 
-var hid = new HID.HID(1356, 616);
+var hid = new HID(1356, 616);
 
 try {
     // note: this fails for bluetooth connections, so we catch

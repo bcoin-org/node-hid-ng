@@ -1,6 +1,6 @@
 console.log('test-ci: Attempting to load node-hid library');
 try {
-    var HID = require('..');
+    const HID = require('../lib/nodehid');
 } catch(err){
     console.log('test-ci: This should error in CI: '+err);
 }

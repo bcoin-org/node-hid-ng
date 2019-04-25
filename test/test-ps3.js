@@ -1,8 +1,8 @@
-var HID = require('../');
-var REPL = require('repl');
+const HID = require('../lib/nodehid');
+const REPL = require('repl');
 
-var repl = REPL.start('node-hid> ');
-var hid = new HID.HID(1356, 616);
+const repl = REPL.start('node-hid> ');
+const hid = new HID(1356, 616);
 
 console.log('features', hid.getFeatureReport(0xf2, 17));
 

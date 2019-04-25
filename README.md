@@ -1,3 +1,7 @@
+*NOTE:* This is a fork of node-hid and may not be maintained.
+For any issues visit the original source:
+https://github.com/node-hid/node-hid
+
 # node-hid - Access USB HID devices from Node.js #
 
 [![npm](https://img.shields.io/npm/dm/node-hid.svg?maxAge=2592000)](http://npmjs.com/package/node-hid)

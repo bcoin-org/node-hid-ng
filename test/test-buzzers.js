@@ -1,7 +1,7 @@
 
-var buzzers = require('./buzzers');
+const buzzers = require('./buzzers');
 
-var buzzerController = new buzzers.BuzzerController();
+const buzzerController = new buzzers.BuzzerController();
 
 function blinkLed(buzzerNumber)
 {

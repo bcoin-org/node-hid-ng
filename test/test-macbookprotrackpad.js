@@ -10,8 +10,8 @@
 // Tod E. Kurt / github.com/todbot
 //
 
-var HID = require('../');
-require('bleno');
+const HID = require('../lib/nodehid');
+// require('bleno');
 
 var devices = HID.devices();
 console.log( devices );
@@ -32,7 +32,7 @@ if( !deviceInfo ) {
 }
 
 console.log("got device. listening to:", deviceInfo.path);
-var device = new HID.HID( deviceInfo.path );
+var device = new HID(deviceInfo.path);
 
 setTimeout( function() {
     device.close();

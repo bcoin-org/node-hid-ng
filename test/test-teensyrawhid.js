@@ -9,11 +9,9 @@
 // Tod E. Kurt / github.com/todbot
 //
 
-var os = require('os');
-
-var HID = require('../');
-
-var devices = HID.devices();
+const os = require('os');
+const HID = require('../lib/nodehid');
+const devices = HID.devices();
 
 // We must filter devices by vendorId, productId, usagePage, and usage
 // because Teensy RawHID sketch shows up as TWO devices to node-hid
@@ -27,15 +25,15 @@ var device;
 if( os.platform() == 'linux' ) {
     var deviceList = devices.filter(function(d) { return isTeensy(d) });
     //console.log("deviceList:",deviceList); // should be two devices
-    if( deviceList.length == 2 ) { 
-	device = new HID.HID( deviceList[0].path ); // normally first device
+    if( deviceList.length == 2 ) {
+	device = new HID( deviceList[0].path ); // normally first device
     }
 }
 else { // Mac & Windows
     var deviceInfo = devices.find( function(d) {
 	return isTeensy(d) && isRawHidUsage(d);
     });
-    device = new HID.HID( deviceInfo.path );
+    device = new HID( deviceInfo.path );
 }
 
 console.log("deviceInfo: ", deviceInfo);

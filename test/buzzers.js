@@ -2,7 +2,7 @@
 
 var util = require('util');
 var events = require('events');
-var HID = require('../');
+var HID = require('../lib/nodehid');
 
 // buzzer protocol info: http://www.developerfusion.com/article/84338/making-usb-c-friendly/
 
@@ -24,7 +24,7 @@ function BuzzerController(index)
 
     events.EventEmitter.call(this);
 
-    this.hid = new HID.HID(controllers[index].path);
+    this.hid = new HID(controllers[index].path);
     this.oldBits = 0;
     this.leds = [0, 0, 0, 0, 0, 0];
 

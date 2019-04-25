@@ -1,7 +1,7 @@
 
-var PowerMate = require('./powermate');
+const PowerMate = require('./powermate');
 
-var powerMate;
+let powerMate;
 for (var i = 0; i < PowerMate.deviceCount(); i++) {
 
     console.log('opening powermate', i);
