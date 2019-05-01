@@ -20,6 +20,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+// disable confusing compiler warnings on Windows
+// https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4290?view=vs-2019
+#pragma warning( disable : 4290 )
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -162,7 +166,7 @@ int
 HID::write(const databuf_t& message)
   throw(JSException)
 {
-  if(!_hidHandle) { 
+  if(!_hidHandle) {
     throw JSException("Cannot write to closed device");
   }
   //unsigned char buf[message.size()];
@@ -205,7 +209,7 @@ HID::readResultsToJSCallbackArguments(ReceiveIOCB* iocb, Local<Value> argv[])
 
     Local<Object> buf = Nan::NewBuffer(message.size()).ToLocalChecked();
     char* data = Buffer::Data(buf);
-    
+
     int j = 0;
     for (vector<unsigned char>::const_iterator k = message.begin(); k != message.end(); k++) {
       data[j++] = *k;
@@ -278,7 +282,7 @@ NAN_METHOD(HID::readSync)
   Local<Array> retval = Nan::New<Array>();
 
   for (int i = 0; i < returnedLength; i++) {
-    retval->Set(i, Nan::New<Integer>(buff_read[i]));
+    Nan::Set( retval, i, Nan::New<Integer>(buff_read[i]) );
   }
   info.GetReturnValue().Set(retval);
 }
@@ -303,7 +307,7 @@ NAN_METHOD(HID::readTimeout)
   Local<Array> retval = Nan::New<Array>();
 
   for (int i = 0; i < returnedLength; i++) {
-    retval->Set(i, Nan::New<Integer>(buff_read[i]));
+    Nan::Set( retval, i, Nan::New<Integer>(buff_read[i]) );
   }
   info.GetReturnValue().Set(retval);
 }
@@ -337,7 +341,7 @@ NAN_METHOD(HID::getFeatureReport)
   Local<Array> retval = Nan::New<Array>();
 
   for (int i = 0; i < returnedLength; i++) {
-    retval->Set(i, Nan::New<Integer>(buf[i]));
+    Nan::Set( retval, i, Nan::New<Integer>(buf[i]) );
   }
   delete[] buf;
   info.GetReturnValue().Set(retval);
@@ -358,10 +362,12 @@ NAN_METHOD(HID::sendFeatureReport)
   vector<unsigned char> message;
   Local<Array> messageArray = Local<Array>::Cast(info[0]);
   for (unsigned i = 0; i < messageArray->Length(); i++) {
-    if (!messageArray->Get(i)->IsNumber()) {
+    Local<Value> v = Nan::Get(messageArray, i).ToLocalChecked();
+    if (!v->IsNumber()) {
       throw JSException("unexpected array element in array to send, expecting only integers");
     }
-    message.push_back((unsigned char) messageArray->Get(i)->Int32Value());
+    int32_t b = Nan::To<int32_t>(v).FromJust();
+    message.push_back((unsigned char) b);
   }
 
   // Convert vector to char array
@@ -402,8 +408,8 @@ NAN_METHOD(HID::New)
       // open by path
       hid = new HID(*Nan::Utf8String(info[0]));
     } else {
-      int32_t vendorId = info[0]->Int32Value();
-      int32_t productId = info[1]->Int32Value();
+      int32_t vendorId = Nan::To<int32_t>(info[0]).FromJust();
+      int32_t productId = Nan::To<int32_t>(info[1]).FromJust();
       wchar_t wserialstr[100]; // FIXME: is there a better way?
       wchar_t* wserialptr = NULL;
       if (info.Length() > 2) {
@@ -443,7 +449,7 @@ NAN_METHOD(HID::setNonBlocking)
     return Nan::ThrowError("Expecting a 1 to enable, 0 to disable as the first argument.");
   }
   int blockStatus = 0;
-  blockStatus = info[0]->Int32Value();
+  blockStatus = Nan::To<int32_t>(info[0]).FromJust();
   try {
     HID* hid = Nan::ObjectWrap::Unwrap<HID>(info.This());
     hid->setNonBlocking(blockStatus);
@@ -468,10 +474,12 @@ NAN_METHOD(HID::write)
     vector<unsigned char> message;
     Local<Array> messageArray = Local<Array>::Cast(info[0]);
     for (unsigned i = 0; i < messageArray->Length(); i++) {
-      if (!messageArray->Get(i)->IsNumber()) {
+      Local<Value> v = Nan::Get(messageArray, i).ToLocalChecked();
+      if (!v->IsNumber()) {
         throw JSException("unexpected array element in array to send, expecting only integers");
       }
-      message.push_back((unsigned char) messageArray->Get(i)->Int32Value());
+      uint32_t b = Nan::To<uint32_t>(v).FromJust();
+      message.push_back((unsigned char) b);
     }
     int returnedLength = hid->write(message); // returns number of bytes written
 
@@ -504,15 +512,15 @@ NAN_METHOD(HID::getDeviceInfo)
     HID* hid = Nan::ObjectWrap::Unwrap<HID>(info.This());
 
     hid_get_manufacturer_string(hid->_hidHandle, wstr, maxlen);
-    deviceInfo->Set(Nan::New<String>("manufacturer").ToLocalChecked(),
+    Nan::Set(deviceInfo, Nan::New<String>("manufacturer").ToLocalChecked(),
       Nan::New<String>(narrow(wstr).c_str()).ToLocalChecked());
 
     hid_get_product_string(hid->_hidHandle, wstr, maxlen);
-    deviceInfo->Set(Nan::New<String>("product").ToLocalChecked(),
+    Nan::Set(deviceInfo, Nan::New<String>("product").ToLocalChecked(),
       Nan::New<String>(narrow(wstr).c_str()).ToLocalChecked());
 
     hid_get_serial_number_string(hid->_hidHandle, wstr, maxlen);
-    deviceInfo->Set(Nan::New<String>("serialNumber").ToLocalChecked(),
+    Nan::Set(deviceInfo, Nan::New<String>("serialNumber").ToLocalChecked(),
       Nan::New<String>(narrow(wstr).c_str()).ToLocalChecked());
 
   }
@@ -535,8 +543,8 @@ NAN_METHOD(HID::devices)
     case 0:
       break;
     case 2:
-      vendorId = info[0]->Int32Value();
-      productId = info[1]->Int32Value();
+      vendorId = Nan::To<int32_t>(info[0]).FromJust();
+      productId = Nan::To<int32_t>(info[1]).FromJust();
       break;
     default:
       throw JSException("unexpected number of arguments to HID.devices() call, expecting either no arguments or vendor and product ID");
@@ -551,29 +559,31 @@ NAN_METHOD(HID::devices)
   int count = 0;
   for (hid_device_info* dev = devs; dev; dev = dev->next) {
     Local<Object> deviceInfo = Nan::New<Object>();
-    deviceInfo->Set(Nan::New<String>("vendorId").ToLocalChecked(), Nan::New<Integer>(dev->vendor_id));
-    deviceInfo->Set(Nan::New<String>("productId").ToLocalChecked(), Nan::New<Integer>(dev->product_id));
+    Nan::Set(deviceInfo, Nan::New<String>("vendorId").ToLocalChecked(), Nan::New<Integer>(dev->vendor_id));
+    Nan::Set(deviceInfo, Nan::New<String>("productId").ToLocalChecked(), Nan::New<Integer>(dev->product_id));
     if (dev->path) {
-      deviceInfo->Set(Nan::New<String>("path").ToLocalChecked(), Nan::New<String>(dev->path).ToLocalChecked());
+      Nan::Set(deviceInfo, Nan::New<String>("path").ToLocalChecked(), Nan::New<String>(dev->path).ToLocalChecked());
     }
     if (dev->serial_number) {
-      deviceInfo->Set(Nan::New<String>("serialNumber").ToLocalChecked(), Nan::New<String>(narrow(dev->serial_number).c_str()).ToLocalChecked());
+      Nan::Set(deviceInfo, Nan::New<String>("serialNumber").ToLocalChecked(), Nan::New<String>(narrow(dev->serial_number).c_str()).ToLocalChecked());
     }
     if (dev->manufacturer_string) {
-      deviceInfo->Set(Nan::New<String>("manufacturer").ToLocalChecked(), Nan::New<String>(narrow(dev->manufacturer_string).c_str()).ToLocalChecked());
+      Nan::Set(deviceInfo, Nan::New<String>("manufacturer").ToLocalChecked(), Nan::New<String>(narrow(dev->manufacturer_string).c_str()).ToLocalChecked());
     }
     if (dev->product_string) {
-      deviceInfo->Set(Nan::New<String>("product").ToLocalChecked(), Nan::New<String>(narrow(dev->product_string).c_str()).ToLocalChecked());
+      Nan::Set(deviceInfo, Nan::New<String>("product").ToLocalChecked(), Nan::New<String>(narrow(dev->product_string).c_str()).ToLocalChecked());
     }
-    deviceInfo->Set(Nan::New<String>("release").ToLocalChecked(), Nan::New<Integer>(dev->release_number));
-    deviceInfo->Set(Nan::New<String>("interface").ToLocalChecked(), Nan::New<Integer>(dev->interface_number));
+    Nan::Set(deviceInfo, Nan::New<String>("release").ToLocalChecked(), Nan::New<Integer>(dev->release_number));
+    Nan::Set(deviceInfo, Nan::New<String>("interface").ToLocalChecked(), Nan::New<Integer>(dev->interface_number));
     if( dev->usage_page ) {
-        deviceInfo->Set(Nan::New<String>("usagePage").ToLocalChecked(), Nan::New<Integer>(dev->usage_page));
+        Nan::Set(deviceInfo, Nan::New<String>("usagePage").ToLocalChecked(), Nan::New<Integer>(dev->usage_page));
     }
     if( dev->usage ) {
-        deviceInfo->Set(Nan::New<String>("usage").ToLocalChecked(), Nan::New<Integer>(dev->usage));
+      //deviceInfo->Set(Nan::New<String>("usage").ToLocalChecked(), Nan::New<Integer>(dev->usage));
+      Nan::Set(deviceInfo, Nan::New<String>("usage").ToLocalChecked(), Nan::New<Integer>(dev->usage));
     }
-    retval->Set(count++, deviceInfo);
+    // retval->Set(count++, deviceInfo);
+    Nan::Set( retval, count++, deviceInfo);
   }
   hid_free_enumeration(devs);
   info.GetReturnValue().Set(retval);
@@ -588,17 +598,18 @@ deinitialize(void*)
   }
 }
 
+
 void
 HID::Initialize(Local<Object> target)
 {
+  Nan::HandleScope scope;
+
   if (hid_init()) {
     return Nan::ThrowError("cannot initialize hidapi (hid_init failed)");
     //abort();
   }
 
   node::AtExit(deinitialize, 0);
-
-  Nan::HandleScope scope;
 
   Local<FunctionTemplate> hidTemplate = Nan::New<FunctionTemplate>(HID::New);
   hidTemplate->InstanceTemplate()->SetInternalFieldCount(1);
@@ -614,9 +625,12 @@ HID::Initialize(Local<Object> target)
   Nan::SetPrototypeMethod(hidTemplate, "readTimeout", readTimeout);
   Nan::SetPrototypeMethod(hidTemplate, "getDeviceInfo", getDeviceInfo);
 
-  target->Set(Nan::New<String>("HID").ToLocalChecked(), hidTemplate->GetFunction());
-
-  target->Set(Nan::New<String>("devices").ToLocalChecked(), Nan::New<FunctionTemplate>(HID::devices)->GetFunction());
+  Nan::Set( target,
+            Nan::New<String>("HID").ToLocalChecked(),
+            Nan::GetFunction( hidTemplate ).ToLocalChecked() );
+  Nan::Set( target,
+            Nan::New<String>("devices").ToLocalChecked(),
+            Nan::GetFunction( Nan::New<v8::FunctionTemplate>(HID::devices)).ToLocalChecked() );
 }
 
 
